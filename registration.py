@@ -184,17 +184,55 @@ def tarea (v1, v2):
         The area of the triangle
 
     """
-    area    = np.linalg.norm(np.cross(v1,v2))/2.
+    area    = np.linalg.norm(np.cross(v1, v2))/2.
 
     return area
 
+def tangles (v1, v2, v3):
+    """
+    Calculate de interal angles of triangles
 
+    Parameters
+    ----------
+    v1, v2, v3 : numpy.array
+        Array of defining a vector
 
+    Return
+    ------
+    theta1, theta2, theta3 : float64
+        Angles of the triangle
 
+    """
+    theta1 = np.arccos(np.dot(v1, v2)/(np.linalg.norm(v1) * np.linalg.norm(v2)))
+    theta2 = np.arccos(np.dot(v2, v3)/(np.linalg.norm(v2) * np.linalg.norm(v3)))
+    theta3 = np.pi - theta1 - theta2
 
+    return theta1, theta2, theta2
 
+def ttransform (v1, v2, v3):
+    """
+    Transform the triangle from R^2 system to triangle space, where x = a/b
+    and y = b/c. The a, b and c are the length of the side of the triangle from
+    the bigger to smaller
 
+    Parameters
+    ----------
+    v1, v2, v3 : numpy.array
+        Array of defining a vector
 
+    Return
+    ------
+    tp : array
+        triangle point in the triangle space
+
+    """
+
+    edges   = np.sort(np.array([ np.linalg.norm(v1), np.linalg.norm(v2), np.linalg.norm(v3)]))
+    xt      = edges[1] / edges[2]
+    yt      = edges[0] / edges[2]
+    pt     = np.array([xt, yt])
+
+    return edges, pt
 
 
 
