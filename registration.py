@@ -147,6 +147,64 @@ def drawkeypts (img, kp, fname):
         fname_tiff = fsplit[0]+'_keypoints.jpg'
     img2 = cv2.drawKeypoints(gray, kp, flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
     cv2.imwrite(fname_tiff, img2)
+    return
+
+def tvectors (p1, p2, p3):
+    """
+    Calculate the vectors of a triangle defined by p1, p2 and p3
+
+    Parameters
+    ----------
+    p1, p2, p3 : numpy.array
+        Array of x and y coordinated of the point
+
+    Return
+    ------
+    v1, v2, v3 : array
+        Vectors of the triangle
+
+    """
+    v1      = p2 - p1
+    v2      = p3 - p1
+    v3      = p3 - p2
+    return v1, v2, v3
+
+def tarea (v1, v2):
+    """
+    Calculate the area of a triangle defined by vectors v1 and v2
+
+    Parameters
+    ----------
+    v1, v2, : numpy.array
+        Array of defining a vector
+
+    Return
+    ------
+    area : float64
+        The area of the triangle
+
+    """
+    area    = np.linalg.norm(np.cross(v1,v2))/2.
+
+    return area
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+####### to be handle latter ###############################
 
 def fmatch (des1, des2, kp1, kp2, ratio=0.700):
     # FLANN_INDEX_KDTREE = 0
