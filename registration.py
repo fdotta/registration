@@ -49,7 +49,7 @@ def detector (img, mfeat='STAR', mcomp='BRIEF'):
     ----------
     img : numpy.array
         RGB numpy.array with m x n x 3 dimensions
-    mfeat : string, optional
+    feat : string, optional
         The desired feature (keypoints) identifier method
     mcomp : string, optional
         The desired descriptor extractor method
@@ -124,11 +124,9 @@ def drawkeypts (img, kp, fname):
     ----------
     img : numpy.array
         RGB numpy.array with m x n x 3 dimensions
-
     kp : list
         List of the keypoints class with dimension n, where n is the total number
         of keypoinys found
-
     fname : string
         file name, relative or absolute path. If the fname was givem without
         extentions will be write a jpg image file. The final file name will be
@@ -199,15 +197,16 @@ def tangles (v1, v2, v3):
 
     Return
     ------
-    theta1, theta2, theta3 : float64
+    theta : numpy.array
         Angles of the triangle
 
     """
-    theta1 = np.arccos(np.dot(v1, v2)/(np.linalg.norm(v1) * np.linalg.norm(v2)))
-    theta2 = np.arccos(np.dot(v2, v3)/(np.linalg.norm(v2) * np.linalg.norm(v3)))
-    theta3 = np.pi - theta1 - theta2
+    theta = np.zeros(3)
+    theta[0] = np.arccos(np.dot(v1, v2)/(np.linalg.norm(v1) * np.linalg.norm(v2)))
+    theta[1] = np.arccos(np.dot(v2, v3)/(np.linalg.norm(v2) * np.linalg.norm(v3)))
+    theta[2] = np.pi - theta[0] - theta[1]
 
-    return theta1, theta2, theta2
+    return theta
 
 def ttransform (v1, v2, v3):
     """
@@ -235,12 +234,132 @@ def ttransform (v1, v2, v3):
     return edges, pt
 
 
+def ftria1 (kp,  minarea=90000):
+    """
+    find the similar triangles based on the provided keypoins (kp1 and kp2).
+    All triangles with area, a lenght smaller than minarea and mina,
+    respectively will be desconsidered. The search will be stoped when the
+    minimum findings (nfinds) or end of keypoints was reached.
+
+    Parameters
+    ----------
+    kp1 : list
+        List of the keypoints class with dimension n
+    minarea : integer, optional
+        minimum triangle area to be considered
+    mina : integer, optional
+        minimum triangle a lenght of triangle (longest side)
+    nfinds : integer, optional
+        number of similar triangles target finding
+
+    Return
+    ------
+    nt1 :  interger
+        Number of similar trinagle finded
+    tfound : numpy.array
+        Array with the points of similar triangles tfound[1:3,1:2,:] -> image 1 (kp1)
+        tfound[4:6,1:2,:] -> image 2  (kp2).
+        dim 1 -> triangles, dim 2 -> x, y
+
+    """
+    lkp = len(kp)
+    nf  = 0
+    ptf = np.zeros([3, 2, 1])
+    tf  = np.zeros([3, 1])
+    vf  = np.zeros([3, 2, 1])
+    af  = np.zeros([1, 1])
+
+    pt = np.zeros([lkp, 2])
+
+    for i in np.arange(lkp):
+        pt[i,:] = np.asarray(kp[i].pt)
+
+    xmean1 = np.mean(pt[:,0])
+    ymean1 = np.mean(pt[:,1])
+
+    for i1 in np.arange(lkp):
+        for j1 in np.arange(i1+1,lkp):
+            for k1 in np.arange(j1+1,lkp):
+                p1           = np.asarray(kp[i1].pt)
+                p2           = np.asarray(kp[j1].pt)
+                p3           = np.asarray(kp[k1].pt)
+                q1            = fquad(p1, xmean1, ymean1)
+                q2            = fquad(p2, xmean1, ymean1)
+                q3            = fquad(p3, xmean1, ymean1)
+                if (q1 != q2) and (q1 != q3) and (q2 != q3):
+                    # print q1, q2, q3, (q1 != q2), (q1 != q3), (q2 != q3)
+                    v1, v2, v3 = tvectors(p1, p2, p3)
+                    area1 = tarea(v1, v2)
+                    theta = np.asarray(tangles(v1, v2, v3))
+                    if area1 >= minarea:
+                        if nf == 0:
+                            ptf[:, :, 0] = np.array([p1, p2, p3])
+                            tf[:, 0]     = theta
+                            vf[:, :, 0]  = np.array([v1, v2, v3])
+                            af[0, 0]     = area1
+                        else:
+                            ptf = np.dstack((ptf, np.array([p1, p2, p3])))
+                            vf = np.dstack((vf, np.array([v1, v2, v3])))
+                            tf = np.hstack((tf, theta.reshape([3, 1])))
+                            af = np.hstack((af, np.array([[area1]])))
+                        nf += 1
+    return ptf, vf, tf, af
+
+def ftria2 (pt, theta, kp, err=0.002):
+    """
+    find the similar triangle in a set of points
+
+    """
+    xerr = err*pt[0]
+    yerr = err*pt[1]
+    lkp = len(kp)
+    for i1 in np.arange(lkp):
+        for j1 in np.arange(i1+1,lkp):
+            for k1 in np.arange(j1+1,lkp):
+                p1         = np.asarray(kp[i1].pt)
+                p2         = np.asarray(kp[j1].pt)
+                p3         = np.asarray(kp[k1].pt)
+                v1, v2, v3 = tvectors(p1, p2, p3)
+                edges, pt2 = ttransform (v1, v2, v3)
+                if (pt[0] - xerr < pt2[0]) and (pt[0] + xerr >= pt2[0]):
+                    if (pt[1] - yerr < pt2[1]) and (pt[1] + yerr >= pt2[1]):
+                            print pt, pt2,xerr, yerr
+
+    return
 
 
 
+def fquad (p, xmean, ymean):
+    """
+    find the quadrant where the point is located based on the mean point (xmean,ymean)
 
+    Parameters
+    ----------
+    p : numpy.array
+        array of the point x and y
+    xmean : float
+        X mean value
+    ymean :  float
+        Y mean value
 
+    Return
+    ------
 
+    quadrant : integer
+        Quadrant (1, 2, 3, 4)
+
+    """
+
+    if (p[0] < xmean) and (p[1] > ymean):
+        quadrant = 1
+    elif (p[0] >= xmean) and (p[1] > ymean):
+        quadrant = 2
+    elif (p[0] < xmean) and (p[1] <= ymean):
+        quadrant = 3
+    else:
+        quadrant = 4
+
+    return quadrant
 
 ####### to be handle latter ###############################
 
