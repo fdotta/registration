@@ -234,40 +234,47 @@ def ttransform (v1, v2, v3):
     return edges, pt
 
 
-def ftria1 (kp,  minarea=90000):
+def ftria1 (kp,  minarea=900000, maxtria=10000, tol=0.25):
     """
-    find the similar triangles based on the provided keypoins (kp1 and kp2).
-    All triangles with area, a lenght smaller than minarea and mina,
-    respectively will be desconsidered. The search will be stoped when the
-    minimum findings (nfinds) or end of keypoints was reached.
+    find the triangles based on the provided keypoins (kp) of image.
+    All triangles with area smaller than minarea will be descosidered. Also
+    the function try to find the area to fits only a certain number of
+    triangles (maxtria) +/- a tolerance.
 
     Parameters
     ----------
-    kp1 : list
+    kp : list
         List of the keypoints class with dimension n
     minarea : integer, optional
         minimum triangle area to be considered
-    mina : integer, optional
-        minimum triangle a lenght of triangle (longest side)
-    nfinds : integer, optional
-        number of similar triangles target finding
+    tol : integer, optional
+        Relative tolerance for the number of triangles found
+    maxtria : integer, optinal
+        Maximum number of triangles to be found
 
-    Return
-    ------
-    nt1 :  interger
-        Number of similar trinagle finded
-    tfound : numpy.array
-        Array with the points of similar triangles tfound[1:3,1:2,:] -> image 1 (kp1)
-        tfound[4:6,1:2,:] -> image 2  (kp2).
-        dim 1 -> triangles, dim 2 -> x, y
+    Returns
+    -------
+    ptf : numpy.array
+        final triangles points found
+    vf : numpy.array
+        final triangles vectors found
+    tf : numpy.array
+        final triangles angles
+    af : numpy.array
+       final triangles areas
+    minarea : integer
+       final minimum search area
 
     """
-    lkp = len(kp)
-    nf  = 0
-    ptf = np.zeros([3, 2, 1])
-    tf  = np.zeros([3, 1])
-    vf  = np.zeros([3, 2, 1])
-    af  = np.zeros([1, 1])
+    lkp       = len(kp)
+    ptf       = np.zeros([3, 2, 1])
+    tf        = np.zeros([3, 1])
+    vf        = np.zeros([3, 2, 1])
+    af        = np.zeros([1, 1])
+    nf        = 0
+    maxtreach = False
+    notend    = True
+    minarea1 = 0.8*minarea
 
     pt = np.zeros([lkp, 2])
 
@@ -277,33 +284,70 @@ def ftria1 (kp,  minarea=90000):
     xmean1 = np.mean(pt[:,0])
     ymean1 = np.mean(pt[:,1])
 
-    for i1 in np.arange(lkp):
-        for j1 in np.arange(i1+1,lkp):
-            for k1 in np.arange(j1+1,lkp):
-                p1           = np.asarray(kp[i1].pt)
-                p2           = np.asarray(kp[j1].pt)
-                p3           = np.asarray(kp[k1].pt)
-                q1            = fquad(p1, xmean1, ymean1)
-                q2            = fquad(p2, xmean1, ymean1)
-                q3            = fquad(p3, xmean1, ymean1)
-                if (q1 != q2) and (q1 != q3) and (q2 != q3):
-                    # print q1, q2, q3, (q1 != q2), (q1 != q3), (q2 != q3)
-                    v1, v2, v3 = tvectors(p1, p2, p3)
-                    area1 = tarea(v1, v2)
-                    theta = np.asarray(tangles(v1, v2, v3))
-                    if area1 >= minarea:
-                        if nf == 0:
-                            ptf[:, :, 0] = np.array([p1, p2, p3])
-                            tf[:, 0]     = theta
-                            vf[:, :, 0]  = np.array([v1, v2, v3])
-                            af[0, 0]     = area1
-                        else:
-                            ptf = np.dstack((ptf, np.array([p1, p2, p3])))
-                            vf = np.dstack((vf, np.array([v1, v2, v3])))
-                            tf = np.hstack((tf, theta.reshape([3, 1])))
-                            af = np.hstack((af, np.array([[area1]])))
-                        nf += 1
-    return ptf, vf, tf, af
+    while (notend):
+        if nf >= (1.0 + tol)*maxtria:
+            nf  = 0
+            ptf = np.zeros([3, 2, 1])
+            tf  = np.zeros([3, 1])
+            vf  = np.zeros([3, 2, 1])
+            af  = np.zeros([1, 1])
+
+        maxtreach = False
+        for i1 in np.arange(lkp-2):
+            if maxtreach:
+                break
+            for j1 in np.arange(i1+1,lkp):
+                if maxtreach:
+                    break
+                for k1 in np.arange(j1+1,lkp):
+                    if maxtreach:
+                        break
+                    p1           = np.asarray(kp[i1].pt)
+                    p2           = np.asarray(kp[j1].pt)
+                    p3           = np.asarray(kp[k1].pt)
+                    q1            = fquad(p1, xmean1, ymean1)
+                    q2            = fquad(p2, xmean1, ymean1)
+                    q3            = fquad(p3, xmean1, ymean1)
+                    if (q1 != q2) and (q1 != q3) and (q2 != q3):
+                        if maxtreach:
+                            break
+                        v1, v2, v3 = tvectors(p1, p2, p3)
+                        area1 = tarea(v1, v2)
+                        theta = np.asarray(tangles(v1, v2, v3))
+                        if area1 >= minarea:
+                            if nf == 0:
+                                ptf[:, :, 0] = np.array([p1, p2, p3])
+                                tf[:, 0]     = theta
+                                vf[:, :, 0]  = np.array([v1, v2, v3])
+                                af[0, 0]     = area1
+                            else:
+                                ptf = np.dstack((ptf, np.array([p1, p2, p3])))
+                                vf = np.dstack((vf, np.array([v1, v2, v3])))
+                                tf = np.hstack((tf, theta.reshape([3, 1])))
+                                af = np.hstack((af, np.array([[area1]])))
+                            nf += 1
+
+                    if nf >= maxtria*(1.0+tol):
+                        maxtreach = True
+                        minarea1 = minarea
+                        minarea = minarea*1.25
+                        # nf = 0
+                        break
+
+                    if (i1 >= (lkp - 3)) and (nf >= maxtria*(1.0 - tol)) and \
+                            nf <= maxtria*(1.0+tol):
+                        maxtreach = True
+                        notend    = False
+                        break
+                    elif (i1 >= lkp - 3) and (nf <= maxtria*(1.0 - tol)):
+                        maxtreach = True
+                        minarea = (minarea1 + minarea)/2
+                        break
+
+            # print "NTria = %5i Pt1 = %3i Area = %i" % (nf, i1, np.int(minarea))
+        if (i1 >= lkp - 2):
+            notend = True
+    return ptf, vf, tf, af, np.int(minarea)
 
 def ftria2 (pt, theta, kp, err=0.002):
     """
@@ -406,4 +450,3 @@ def faffine (src, dst):
     T = cv2.getAffineTransform(tria1, tria2)
 
     return T
-
