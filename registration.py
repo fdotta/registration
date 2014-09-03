@@ -258,8 +258,6 @@ def ftria1 (kp,  minarea=900000, maxtria=10000, tol=0.25):
         final triangles points found
     vf : numpy.array
         final triangles vectors found
-    tf : numpy.array
-        final triangles angles
     af : numpy.array
        final triangles areas
     minarea : integer
@@ -268,7 +266,6 @@ def ftria1 (kp,  minarea=900000, maxtria=10000, tol=0.25):
     """
     lkp       = len(kp)
     ptf       = np.zeros([3, 2, 1])
-    tf        = np.zeros([3, 1])
     vf        = np.zeros([3, 2, 1])
     af        = np.zeros([1, 1])
     nf        = 0
@@ -288,7 +285,6 @@ def ftria1 (kp,  minarea=900000, maxtria=10000, tol=0.25):
         if nf >= (1.0 + tol)*maxtria:
             nf  = 0
             ptf = np.zeros([3, 2, 1])
-            tf  = np.zeros([3, 1])
             vf  = np.zeros([3, 2, 1])
             af  = np.zeros([1, 1])
 
@@ -296,7 +292,7 @@ def ftria1 (kp,  minarea=900000, maxtria=10000, tol=0.25):
         for i1 in np.arange(lkp-2):
             if maxtreach:
                 break
-            for j1 in np.arange(i1+1,lkp):
+            for j1 in np.arange(i1+1,lkp-1):
                 if maxtreach:
                     break
                 for k1 in np.arange(j1+1,lkp):
@@ -313,17 +309,14 @@ def ftria1 (kp,  minarea=900000, maxtria=10000, tol=0.25):
                             break
                         v1, v2, v3 = tvectors(p1, p2, p3)
                         area1 = tarea(v1, v2)
-                        theta = np.asarray(tangles(v1, v2, v3))
                         if area1 >= minarea:
                             if nf == 0:
                                 ptf[:, :, 0] = np.array([p1, p2, p3])
-                                tf[:, 0]     = theta
                                 vf[:, :, 0]  = np.array([v1, v2, v3])
                                 af[0, 0]     = area1
                             else:
                                 ptf = np.dstack((ptf, np.array([p1, p2, p3])))
                                 vf = np.dstack((vf, np.array([v1, v2, v3])))
-                                tf = np.hstack((tf, theta.reshape([3, 1])))
                                 af = np.hstack((af, np.array([[area1]])))
                             nf += 1
 
@@ -331,7 +324,6 @@ def ftria1 (kp,  minarea=900000, maxtria=10000, tol=0.25):
                         maxtreach = True
                         minarea1 = minarea
                         minarea = minarea*1.25
-                        # nf = 0
                         break
 
                     if (i1 >= (lkp - 3)) and (nf >= maxtria*(1.0 - tol)) and \
@@ -347,30 +339,54 @@ def ftria1 (kp,  minarea=900000, maxtria=10000, tol=0.25):
             # print "NTria = %5i Pt1 = %3i Area = %i" % (nf, i1, np.int(minarea))
         if (i1 >= lkp - 2):
             notend = True
-    return ptf, vf, tf, af, np.int(minarea)
+    return ptf, vf, af, np.int(minarea)
 
-def ftria2 (pt, theta, kp, err=0.002):
+def ftria2 (kp, minarea):
     """
-    find the similar triangle in a set of points
+    find the triangles based on the provided keypoins (kp) of image and minimum
+    area of the triangle.
 
+    Parameters
+    ----------
+    kp : list
+        List of the keypoints class with dimension n
+    minarea : integer, optional
+        minimum triangle area to be considered
+
+    Returns
+    -------
+    ptf : numpy.array
+        final triangles points found
+    vf : numpy.array
+        final triangles vectors found
+    af : numpy.array
+       final triangles areas
     """
-    xerr = err*pt[0]
-    yerr = err*pt[1]
-    lkp = len(kp)
-    for i1 in np.arange(lkp):
-        for j1 in np.arange(i1+1,lkp):
+    lkp       = len(kp)
+    ptf       = np.zeros([3, 2, 1])
+    vf        = np.zeros([3, 2, 1])
+    af        = np.zeros([1, 1])
+    nf        = 0
+    for i1 in np.arange(lkp-2):
+        for j1 in np.arange(i1+1,lkp-1):
             for k1 in np.arange(j1+1,lkp):
-                p1         = np.asarray(kp[i1].pt)
-                p2         = np.asarray(kp[j1].pt)
-                p3         = np.asarray(kp[k1].pt)
+                p1           = np.asarray(kp[i1].pt)
+                p2           = np.asarray(kp[j1].pt)
+                p3           = np.asarray(kp[k1].pt)
                 v1, v2, v3 = tvectors(p1, p2, p3)
-                edges, pt2 = ttransform (v1, v2, v3)
-                if (pt[0] - xerr < pt2[0]) and (pt[0] + xerr >= pt2[0]):
-                    if (pt[1] - yerr < pt2[1]) and (pt[1] + yerr >= pt2[1]):
-                            print pt, pt2,xerr, yerr
+                area1 = tarea(v1, v2)
+                if area1 >= minarea:
+                    if nf == 0:
+                        ptf[:, :, 0] = np.array([p1, p2, p3])
+                        vf[:, :, 0]  = np.array([v1, v2, v3])
+                        af[0, 0]     = area1
+                    else:
+                        ptf = np.dstack((ptf, np.array([p1, p2, p3])))
+                        vf = np.dstack((vf, np.array([v1, v2, v3])))
+                        af = np.hstack((af, np.array([[area1]])))
+                    nf += 1
 
-    return
-
+    return ptf, vf, af
 
 
 def fquad (p, xmean, ymean):
@@ -404,6 +420,56 @@ def fquad (p, xmean, ymean):
         quadrant = 4
 
     return quadrant
+
+def ftriam (ptf1, ptf2, vf1, vf2, af1, af2, maxmatch=30, err=0.001):
+    """
+    Find similar triangles form ptf1 in ptf2
+
+    Parameters
+    ----------
+
+
+    Returns
+    -------
+
+
+    """
+    np1 = ptf1.shape[2]
+    np2 = ptf2.shape[2]
+    nf = 0
+
+    for i1 in np.arange(np1):
+        if nf >= maxmatch:
+            break
+        edges1, pt1 = ttransform(vf1[0,:,i1], vf1[1,:,i1], vf1[2,:,i1])
+        theta1 = tangles (vf1[0,:,i1], vf1[1,:,i1], vf1[2,:,i1])
+        xerr = err*pt1[0]
+        yerr = err*pt1[1]
+        terr = err*np.max(theta1)
+        aerr = err*af1[0,i1]
+        for i2 in np.arange(np2):
+            if nf >= maxmatch:
+                break
+            if (af1[0, i1] - aerr < af2[0, i2]) and (af1[0, i1] + aerr >= af2[0, i2]):
+                edges2, pt2 = ttransform(vf2[0, :, i2], vf2[1, :, i2], vf2[2, :, i2])
+                theta2 = tangles (vf2[0, :, i2], vf2[1, :, i2], vf2[2, :, i2])
+                if (pt1[0] - xerr < pt2[0]) and (pt1[0] + xerr >= pt2[0]):
+                    if (pt1[1] - yerr < pt2[1]) and (pt1[1] + yerr >= pt2[1]):
+                        tfind = False
+                        for j1 in np.arange(3):
+                            if tfind:
+                                break
+                            for j2 in np.arange(3):
+                                if tfind:
+                                    break
+                                if (theta1[j1] - terr < theta2[j2]) and (theta1[j1] + terr >= theta2[j2]):
+                                    nf += 1
+                                    print nf, i2, pt1, pt2, xerr, yerr
+                                    print "  ", theta1, theta2, terr
+                                    tfind = True
+
+    return
+
 
 ####### to be handle latter ###############################
 
