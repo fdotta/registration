@@ -25,7 +25,7 @@ ptm0, ptm1, nf = ro.ftriam(ptf0, ptf1, vf0, vf1, af0, af1)
 print "time: %5.2f [match]" % (time.time() - t0)
 
 t0 = time.time()
-ptm0o, ptm1o, pt, TM = ro.Tmatrix(ptm0, ptm1)
+ptm0o, ptm1o, TM, T = ro.Tmatrix(ptm0, ptm1)
 print "time: %5.2f [TM]" % (time.time() - t0)
 
 t0 = time.time()

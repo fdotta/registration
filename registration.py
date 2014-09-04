@@ -556,7 +556,7 @@ def Tmatrix (ptm1, ptm2):
         for j in np.arange(3):
             TM[i, j] = np.mean(T[i, j, :])
 
-    return ptm1, ptm2, pt, TM
+    return ptm1, ptm2, TM, T
 
 
 def foutliers(data, m=2.0):
