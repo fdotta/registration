@@ -7,8 +7,10 @@ import drawtria as dt
 t0 = time.time()
 img0 = ro.readimg( './light/DSC_4364.tiff.fix.tiff')
 img1 = ro.readimg( './light/DSC_4384.tiff.fix.tiff')
-kp0, des0 = ro.detector(img0)
-kp1, des1 = ro.detector(img1)
+# kp0, des0 = ro.detector(img0)
+# kp1, des1 = ro.detector(img1)
+kp0, des0 = ro.detector(img0, mfeat='BRISK', mcomp='BRISK')
+kp1, des1 = ro.detector(img1, mfeat='BRISK', mcomp='BRISK')
 print "time: %5.2f [kp, des]" % (time.time() - t0)
 
 t0 = time.time()
