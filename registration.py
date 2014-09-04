@@ -421,7 +421,7 @@ def fquad (p, xmean, ymean):
 
     return quadrant
 
-def ftriam (ptf1, ptf2, vf1, vf2, af1, af2, maxmatch=30, err=0.001):
+def ftriam (ptf1, ptf2, vf1, vf2, af1, af2, maxmatch=40, err=0.0015):
     """
     Find similar triangles form ptf1 in ptf2
 
@@ -434,9 +434,11 @@ def ftriam (ptf1, ptf2, vf1, vf2, af1, af2, maxmatch=30, err=0.001):
 
 
     """
-    np1 = ptf1.shape[2]
-    np2 = ptf2.shape[2]
-    nf = 0
+    np1  = ptf1.shape[2]
+    np2  = ptf2.shape[2]
+    nf   = 0
+    ptm1 = np.zeros([3, 2, maxmatch])
+    ptm2 = np.zeros([3, 2, maxmatch])
 
     for i1 in np.arange(np1):
         if nf >= maxmatch:
@@ -462,13 +464,27 @@ def ftriam (ptf1, ptf2, vf1, vf2, af1, af2, maxmatch=30, err=0.001):
                             for j2 in np.arange(3):
                                 if tfind:
                                     break
-                                if (theta1[j1] - terr < theta2[j2]) and (theta1[j1] + terr >= theta2[j2]):
+                                ttmp = np.asarray(np.where(theta1 - terr < theta2) and (theta1 + terr >= theta2))
+                                if ttmp.shape[0] == 3:
                                     nf += 1
-                                    print nf, i2, pt1, pt2, xerr, yerr
-                                    print "  ", theta1, theta2, terr
+                                    ptm1[:, :, nf-1] = ptf1[:, :, i1]
+                                    ptm2[:, :, nf-1] = ptf2[:, :, i2]
+                                    # print ">", nf, i2, pt1, pt2, xerr, yerr
+                                    # print "   ", theta1, theta2, terr
                                     tfind = True
 
-    return
+    return ptm1, ptm2, nf
+
+
+def reject_outliers(data, m = 2.):
+    d = np.abs(data - np.median(data))
+    mdev = np.median(d)
+    s = d/mdev if mdev else 0.
+    return data[s<m]
+
+
+
+
 
 
 ####### to be handle latter ###############################
@@ -511,8 +527,8 @@ def fmatch (des1, des2, kp1, kp2, ratio=0.700):
 
 def faffine (src, dst):
 
-    tria1 = (src[0], src[1], src[2])
-    tria2 = (dst[0], dst[1], dst[2])
-    T = cv2.getAffineTransform(tria1, tria2)
+    src = np.float32(src)
+    dst = np.float32(dst)
+    T = cv2.getAffineTransform(src, dst)
 
     return T
