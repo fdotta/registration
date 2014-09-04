@@ -35,6 +35,9 @@ print "time: %5.2f [per img]" % (time.time() - t00)
 cv2.imwrite('warp_img0_0.jpg', img0)
 cv2.imwrite('warp_img1_t.jpg', timg1)
 
+ro.drawkeypts(img0, kp0, 'img0')
+ro.drawkeypts(img0, kp0, 'img1')
+
 dt.drawtria(img1, ptm1o[:,:,0], "t01_img1")
 dt.drawtria(img1, ptm1o[:,:,1], "t02_img1")
 dt.drawtria(img0, ptm0o[:,:,0], "t01_img0")
