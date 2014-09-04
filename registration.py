@@ -421,18 +421,29 @@ def fquad (p, xmean, ymean):
 
     return quadrant
 
-def ftriam (ptf1, ptf2, vf1, vf2, af1, af2, maxmatch=40, err=0.0015):
+def ftriam (ptf1, ptf2, vf1, vf2, af1, af2, maxmatch=100, err=0.001):
     """
     Find similar triangles form ptf1 in ptf2
 
     Parameters
     ----------
-
+    ptf1, ptf2 : numpy.array
+        final triangles points found
+    vf1, vf2 : numpy.array
+        final triangles vectors found
+    af1, af2 : numpy.array
+       final triangles areas
+    maxmatch : integer, optional
+        Maximum triangles to find
+    err : float
+        relative error
 
     Returns
     -------
-
-
+    ptm1, ptm2 : numpy.array
+        Matched triangles points
+    nf : integer
+        Number of triangles matched
     """
     np1  = ptf1.shape[2]
     np2  = ptf2.shape[2]
@@ -476,12 +487,86 @@ def ftriam (ptf1, ptf2, vf1, vf2, af1, af2, maxmatch=40, err=0.0015):
     return ptm1, ptm2, nf
 
 
-def reject_outliers(data, m = 2.):
+def faffine (src, dst):
+    """
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    """
+    src = np.float32(src)
+    dst = np.float32(dst)
+    T = cv2.getAffineTransform(src, dst)
+
+    return T
+
+def Tmatrix (ptm1, ptm2):
+
+    nptm = ptm1.shape[2]
+    T = np.zeros([2, 3, 1])
+    pt = np.zeros([nptm, 2])
+
+    for i in np.arange(nptm):
+        Tidx = faffine(np.asarray(ptm2[:, :, i]), np.asarray(ptm1[:, :, i]))
+        if i == 0:
+            T[: , :, i] = Tidx[:, :]
+        else:
+            T = np.dstack((T, Tidx))
+
+    for idx in np.arange(nptm):
+        pp = [ptm2[1,0,idx], ptm2[1,1, idx], 1.]
+        for i in np.arange(nptm):
+            pt[i, :] =  np.dot(T[:, :, i], pp)
+            # print idx, "real:", ptm1[1, :, idx], "     Transformed:", pt[i, :]
+
+        xo = foutliers(pt[:, 0])
+        xo_rrange = np.arange(nptm)
+        xo_rrange = xo_rrange[::-1]
+
+        for i in xo_rrange:
+            if not xo[i]:
+                pt = np.delete(pt, i, axis=0)
+        if not ((np.mean(pt[0,:]) >=  0.9*ptm1[1, 0, idx]) and (np.mean(pt[0,:]) < 1.1*ptm1[1, 0, idx])):
+            pt = np.zeros([nptm, 2])
+        else:
+            for i in xo_rrange:
+                if not xo[i]:
+                    T    = np.delete(T, i, axis=2)
+                    ptm1 = np.delete(ptm1, i, axis=2)
+                    ptm2 = np.delete(ptm2, i, axis=2)
+            break
+
+    yo = foutliers(pt[:, 1])
+
+    nptm = ptm1.shape[2]
+    yo_rrange = np.arange(nptm)
+    yo_rrange = yo_rrange[::-1]
+    for i in yo_rrange:
+        if not yo[i]:
+            T    = np.delete(T, i, axis=2)
+            ptm1 = np.delete(ptm1, i, axis=2)
+            ptm2 = np.delete(ptm2, i, axis=2)
+            pt = np.delete(pt, i, axis=0)
+
+    TM = np.zeros([2, 3])
+
+    for i in np.arange(2):
+        for j in np.arange(3):
+            TM[i, j] = np.mean(T[i, j, :])
+
+    return ptm1, ptm2, pt, TM
+
+
+def foutliers(data, m=2.0):
+    """
+
+    """
     d = np.abs(data - np.median(data))
     mdev = np.median(d)
     s = d/mdev if mdev else 0.
-    return data[s<m]
-
+    return s<m
 
 
 
@@ -489,7 +574,7 @@ def reject_outliers(data, m = 2.):
 
 ####### to be handle latter ###############################
 
-def fmatch (des1, des2, kp1, kp2, ratio=0.700):
+# def fmatch (des1, des2, kp1, kp2, ratio=0.700):
     # FLANN_INDEX_KDTREE = 0
     # index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
     # search_params = dict(checks = 50)
@@ -510,25 +595,18 @@ def fmatch (des1, des2, kp1, kp2, ratio=0.700):
         # pts1 = np.float32([ kp1[m.queryIdx].pt for m in good ]).reshape(-1,1,2)
         # pts2 = np.float32([ kp2[m.trainIdx].pt for m in good ]).reshape(-1,1,2)
 
-    matcher = cv2.BFMatcher(cv2.NORM_L2)
+    # matcher = cv2.BFMatcher(cv2.NORM_L2)
 
-    matches = matcher.knnMatch(des1, trainDescriptors = des2, k = 2) #2
+    # matches = matcher.knnMatch(des1, trainDescriptors = des2, k = 2) #2
 
-    mkp1, mkp2 = [], []
-    for m in matches:
-        if len(m) == 2 and m[0].distance < m[1].distance * ratio:
-            m = m[0]
-            mkp1.append( kp1[m.queryIdx] )
-            mkp2.append( kp2[m.trainIdx] )
-            kp_pairs = zip(mkp1, mkp2)
-    return kp_pairs
+    # mkp1, mkp2 = [], []
+    # for m in matches:
+    #     if len(m) == 2 and m[0].distance < m[1].distance * ratio:
+    #         m = m[0]
+    #         mkp1.append( kp1[m.queryIdx] )
+    #         mkp2.append( kp2[m.trainIdx] )
+    #         kp_pairs = zip(mkp1, mkp2)
+    # return kp_pairs
 
-    # return pts1, pts2
+    # # return pts1, pts2
 
-def faffine (src, dst):
-
-    src = np.float32(src)
-    dst = np.float32(dst)
-    T = cv2.getAffineTransform(src, dst)
-
-    return T
