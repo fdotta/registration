@@ -421,7 +421,7 @@ def fquad (p, xmean, ymean):
 
     return quadrant
 
-def ftriam (ptf1, ptf2, vf1, vf2, af1, af2, maxmatch=100, err=0.001):
+def ftriam (ptf1, ptf2, vf1, vf2, af1, af2, maxmatch=120, err=0.0075):
     """
     Find similar triangles form ptf1 in ptf2
 
@@ -514,29 +514,36 @@ def Tmatrix (ptm1, ptm2):
             T[: , :, i] = Tidx[:, :]
         else:
             T = np.dstack((T, Tidx))
+    notend = False
 
-    for idx in np.arange(nptm):
-        pp = [ptm2[1,0,idx], ptm2[1,1, idx], 1.]
-        for i in np.arange(nptm):
-            pt[i, :] =  np.dot(T[:, :, i], pp)
-            # print idx, "real:", ptm1[1, :, idx], "     Transformed:", pt[i, :]
+    tpp = 0
+    while (not notend):
+        for idx in np.arange(nptm):
+            pp = [ptm2[tpp,0,idx], ptm2[tpp,1, idx], 1.]
+            for i in np.arange(nptm):
+                pt[i, :] =  np.dot(T[:, :, i], pp)
+                # print idx, "real:", ptm1[1, :, idx], "     Transformed:", pt[i, :]
 
-        xo = foutliers(pt[:, 0])
-        xo_rrange = np.arange(nptm)
-        xo_rrange = xo_rrange[::-1]
+            xo = foutliers(pt[:, 0])
+            xo_rrange = np.arange(nptm)
+            xo_rrange = xo_rrange[::-1]
 
-        for i in xo_rrange:
-            if not xo[i]:
-                pt = np.delete(pt, i, axis=0)
-        if not ((np.mean(pt[0,:]) >=  0.9*ptm1[1, 0, idx]) and (np.mean(pt[0,:]) < 1.1*ptm1[1, 0, idx])):
-            pt = np.zeros([nptm, 2])
-        else:
             for i in xo_rrange:
                 if not xo[i]:
-                    T    = np.delete(T, i, axis=2)
-                    ptm1 = np.delete(ptm1, i, axis=2)
-                    ptm2 = np.delete(ptm2, i, axis=2)
-            break
+                    pt = np.delete(pt, i, axis=0)
+            if not ((np.mean(pt[0,:]) >=  0.85*ptm1[1, 0, idx]) and (np.mean(pt[0,:]) < 1.15*ptm1[1, 0, idx])):
+                pt = np.zeros([nptm, 2])
+            else:
+                for i in xo_rrange:
+                    if not xo[i]:
+                        T    = np.delete(T, i, axis=2)
+                        ptm1 = np.delete(ptm1, i, axis=2)
+                        ptm2 = np.delete(ptm2, i, axis=2)
+                notend = True
+                break
+        tpp += 1
+        if tpp == 3:
+            notend = True
 
     yo = foutliers(pt[:, 1])
 
@@ -609,4 +616,5 @@ def foutliers(data, m=2.0):
     # return kp_pairs
 
     # # return pts1, pts2
+
 
