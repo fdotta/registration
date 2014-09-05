@@ -233,7 +233,6 @@ def ttransform (v1, v2, v3):
 
     return edges, pt
 
-
 def ftria1 (kp,  minarea=900000, maxtria=10000, tol=0.25):
     """
     find the triangles based on the provided keypoins (kp) of image.
@@ -388,7 +387,6 @@ def ftria2 (kp, minarea):
 
     return ptf, vf, af
 
-
 def fquad (p, xmean, ymean):
     """
     find the quadrant where the point is located based on the mean point (xmean,ymean)
@@ -421,7 +419,7 @@ def fquad (p, xmean, ymean):
 
     return quadrant
 
-def ftriam (ptf1, ptf2, vf1, vf2, af1, af2, maxmatch=120, err=0.0075):
+def ftriam (ptf1, ptf2, vf1, vf2, af1, af2, maxmatch=120, err=0.001):
     """
     Find similar triangles form ptf1 in ptf2
 
@@ -486,7 +484,6 @@ def ftriam (ptf1, ptf2, vf1, vf2, af1, af2, maxmatch=120, err=0.0075):
 
     return ptm1, ptm2, nf
 
-
 def faffine (src, dst):
     """
     Parameters
@@ -503,10 +500,12 @@ def faffine (src, dst):
     return T
 
 def Tmatrix (ptm1, ptm2):
-
-    nptm = ptm1.shape[2]
-    T = np.zeros([2, 3, 1])
-    pt = np.zeros([nptm, 2])
+    nptm         = ptm1.shape[2]
+    T            = np.zeros([2, 3, 1])
+    pt           = np.zeros([nptm, 2])
+    notend       = False
+    nopointvalid = False
+    tpp          = 0
 
     for i in np.arange(nptm):
         Tidx = faffine(np.asarray(ptm2[:, :, i]), np.asarray(ptm1[:, :, i]))
@@ -514,9 +513,7 @@ def Tmatrix (ptm1, ptm2):
             T[: , :, i] = Tidx[:, :]
         else:
             T = np.dstack((T, Tidx))
-    notend = False
 
-    tpp = 0
     while (not notend):
         for idx in np.arange(nptm):
             pp = [ptm2[tpp,0,idx], ptm2[tpp,1, idx], 1.]
@@ -531,7 +528,7 @@ def Tmatrix (ptm1, ptm2):
             for i in xo_rrange:
                 if not xo[i]:
                     pt = np.delete(pt, i, axis=0)
-            if not ((np.mean(pt[0,:]) >=  0.85*ptm1[1, 0, idx]) and (np.mean(pt[0,:]) < 1.15*ptm1[1, 0, idx])):
+            if not ((np.mean(pt[0,:]) >=  0.85*ptm1[tpp, 0, idx]) and (np.mean(pt[0,:]) < 1.15*ptm1[tpp, 0, idx])):
                 pt = np.zeros([nptm, 2])
             else:
                 for i in xo_rrange:
@@ -542,29 +539,33 @@ def Tmatrix (ptm1, ptm2):
                 notend = True
                 break
         tpp += 1
+        print tpp, nopointvalid
         if tpp == 3:
-            notend = True
+            notend       = True
+            nopointvalid = True
 
-    yo = foutliers(pt[:, 1])
+    if not nopointvalid:
+        yo = foutliers(pt[:, 1])
 
-    nptm = ptm1.shape[2]
-    yo_rrange = np.arange(nptm)
-    yo_rrange = yo_rrange[::-1]
-    for i in yo_rrange:
-        if not yo[i]:
-            T    = np.delete(T, i, axis=2)
-            ptm1 = np.delete(ptm1, i, axis=2)
-            ptm2 = np.delete(ptm2, i, axis=2)
-            pt = np.delete(pt, i, axis=0)
+        nptm = ptm1.shape[2]
+        yo_rrange = np.arange(nptm)
+        yo_rrange = yo_rrange[::-1]
+        for i in yo_rrange:
+            if not yo[i]:
+                T    = np.delete(T, i, axis=2)
+                ptm1 = np.delete(ptm1, i, axis=2)
+                ptm2 = np.delete(ptm2, i, axis=2)
+                pt = np.delete(pt, i, axis=0)
 
-    TM = np.zeros([2, 3])
+        TM = np.zeros([2, 3])
 
-    for i in np.arange(2):
-        for j in np.arange(3):
-            TM[i, j] = np.mean(T[i, j, :])
+        for i in np.arange(2):
+            for j in np.arange(3):
+                TM[i, j] = np.mean(T[i, j, :])
+    else:
+        TM = np.zeros([2, 3])
 
-    return ptm1, ptm2, TM, T
-
+    return ptm1, ptm2, TM, nopointvalid
 
 def foutliers(data, m=2.0):
     """

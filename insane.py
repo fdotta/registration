@@ -19,11 +19,18 @@ def regrun(args):
     img1 = ro.readimg(tiff)
     kp1, des1 = ro.detector(img1)
     ptf1, vf1, af1 = ro.ftria2(kp1, minarea)
-    ptm0, ptm1, nf = ro.ftriam(ptf0, ptf1, vf0, vf1, af0, af1)
-    ptm0o, ptm1o, TM, T = ro.Tmatrix(ptm0, ptm1)
-    timg1 = cv2.warpAffine(img1, TM, (img1.shape[1], img1.shape[0]))
-    fname = './warp/warp_' + os.path.split(tiff)[1]
-    cv2.imwrite(fname, timg1)
+    lerr = 0.0075
+    for i in np.arange(4):
+        ptm0, ptm1, nf = ro.ftriam(ptf0, ptf1, vf0, vf1, af0, af1, err=lerr)
+        ptm0o, ptm1o, TM, valid = ro.Tmatrix(ptm0, ptm1)
+        if not valid:
+            lerr = lerr/4
+        else:
+            break
+    if valid:
+        timg1 = cv2.warpAffine(img1, TM, (img1.shape[1], img1.shape[0]))
+        fname = './warp/warp_' + os.path.split(tiff)[1]
+        cv2.imwrite(fname, timg1)
     return time.time() - t0
 
 def findinfolder (path):
