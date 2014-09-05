@@ -539,7 +539,6 @@ def Tmatrix (ptm1, ptm2):
                 notend = True
                 break
         tpp += 1
-        print tpp, nopointvalid
         if tpp == 3:
             notend       = True
             nopointvalid = True
