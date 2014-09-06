@@ -552,9 +552,16 @@ def Tmatrix (ptm1, ptm2):
             notend       = True
             nopointvalid = True
 
-    if not nopointvalid:
-        yo = foutliers(pt[:, 1])
 
+    yo = foutliers(pt[:, 1])
+    try:
+       len(yo)
+    except TypeError:
+       nopointvalid = True
+    else:
+       nopointvalid = False
+
+    if not nopointvalid:
         nptm = ptm1.shape[2]
         yo_rrange = np.arange(nptm)
         yo_rrange = yo_rrange[::-1]
@@ -626,5 +633,6 @@ def foutliers(data, m=2.0):
     # return kp_pairs
 
     # # return pts1, pts2
+
 
 

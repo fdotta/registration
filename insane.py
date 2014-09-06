@@ -22,7 +22,7 @@ def regrun(args):
     kp1, des1 = ro.detector(img1)
     ptf1, vf1, af1 = ro.ftria2(kp1, minarea)
     lerr = 0.00125
-    for i in np.arange(4):
+    for i in np.arange(3):
         um.mtimeT(t0, i, tiff)
         ptm0, ptm1, nf = ro.ftriam(ptf0, ptf1, vf0, vf1, af0, af1, err=lerr)
         ptm0o, ptm1o, TM, valid = ro.Tmatrix(ptm0, ptm1)
@@ -148,4 +148,5 @@ if __name__ == '__main__':
 # dt.drawtria(img1, ptm1o[:,:,65], "t66_img1")
 # dt.drawtria(img0, ptm0o[:,:,64], "t65_img0")
 # dt.drawtria(img0, ptm0o[:,:,65], "t66_img0")
+
 
