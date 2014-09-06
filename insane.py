@@ -31,8 +31,8 @@ def regrun(args):
         else:
             break
     if valid:
-        # fname = './warp/warp_' + os.path.split(tiff)[1]
-        fname = './warp/warp_' + os.path.split(os.path.splitext(tiff)[0])[1] + '.jpg'
+        fname = './warp/warp_' + os.path.split(tiff)[1]
+        # fname = './warp/warp_' + os.path.split(os.path.splitext(tiff)[0])[1] + '.jpg'
         um.mdoneimg(t0, fname)
         timg1 = cv2.warpAffine(img1, TM, (img1.shape[1], img1.shape[0]))
         cv2.imwrite(fname, timg1)
@@ -54,8 +54,8 @@ def refimg(fname):
     img0 = ro.readimg(fname)
     kp0, des0 = ro.detector(img0)
     ptf0, vf0, af0, minarea = ro.ftria1(kp0)
-    # fname = './warp/warp_' + os.path.split(fname)[1]
-    fname = './warp/warp_' + os.path.split(os.path.splitext(fname)[0])[1] + '.jpg'
+    fname = './warp/warp_' + os.path.split(fname)[1]
+    # fname = './warp/warp_' + os.path.split(os.path.splitext(fname)[0])[1] + '.jpg'
     cv2.imwrite(fname, img0)
     return kp0, des0, ptf0, vf0, af0, minarea
 
