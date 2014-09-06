@@ -38,7 +38,7 @@ def readimg (fname):
     -------
     >>> img = readimg('picture.tiff')
     """
-    print fname
+    # print fname
     img = cv2.imread(fname)
     return img
 
@@ -234,7 +234,7 @@ def ttransform (v1, v2, v3):
 
     return edges, pt
 
-def ftria1 (kp,  minarea=900000, maxtria=10000, tol=0.25):
+def ftria1 (kp,  minarea=900000, maxtria=20000, tol=0.25):
     """
     find the triangles based on the provided keypoins (kp) of image.
     All triangles with area smaller than minarea will be descosidered. Also

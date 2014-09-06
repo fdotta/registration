@@ -21,9 +21,8 @@ ptf1, vf1, af1 = ro.ftria2(kp1, minarea)
 print "time: %5.2f [tria2]" % (time.time() - t0)
 
 t0 = time.time()
-lerr = 0.005
+lerr = 0.00125
 for i in np.arange(4):
-    print i, lerr
     ptm0, ptm1, nf = ro.ftriam(ptf0, ptf1, vf0, vf1, af0, af1, err=lerr)
     print "time: %5.2f [match]" % (time.time() - t0)
 
@@ -31,7 +30,7 @@ for i in np.arange(4):
     ptm0o, ptm1o, TM, valid = ro.Tmatrix(ptm0, ptm1)
     print valid, lerr
     if not valid:
-        lerr = lerr/4
+        lerr = lerr/1.25
     else:
         print "time: %5.2f [TM]" % (time.time() - t0)
         break

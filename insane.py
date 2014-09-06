@@ -2,6 +2,7 @@
 import cv2
 import numpy as np
 import registration as ro
+import usermsg as um
 import time
 import drawtria as dt
 from multiprocessing import Pool
@@ -16,22 +17,27 @@ def regrun(args):
     vf0     = args[3]
     af0     = args[4]
     minarea = args[5]
+    um.mfile(tiff)
     img1 = ro.readimg(tiff)
     kp1, des1 = ro.detector(img1)
     ptf1, vf1, af1 = ro.ftria2(kp1, minarea)
-    lerr = 0.0008
+    lerr = 0.00125
     for i in np.arange(4):
+        um.mtimeT(t0, i, tiff)
         ptm0, ptm1, nf = ro.ftriam(ptf0, ptf1, vf0, vf1, af0, af1, err=lerr)
         ptm0o, ptm1o, TM, valid = ro.Tmatrix(ptm0, ptm1)
         if not valid:
-            lerr = lerr/1.5
+            lerr = lerr/1.25
         else:
             break
     if valid:
-        fname = './warp/warp_' + os.path.split(tiff)[1]
-        # fname = './warp/warp_' + os.path.split(os.path.splitext(tiff)[0])[1] + '.jpg'
+        # fname = './warp/warp_' + os.path.split(tiff)[1]
+        fname = './warp/warp_' + os.path.split(os.path.splitext(tiff)[0])[1] + '.jpg'
+        um.mdoneimg(t0, fname)
         timg1 = cv2.warpAffine(img1, TM, (img1.shape[1], img1.shape[0]))
         cv2.imwrite(fname, timg1)
+    else:
+        um.mfailimg(t0, tiff)
     return time.time() - t0
 
 def findinfolder (path):
@@ -48,8 +54,8 @@ def refimg(fname):
     img0 = ro.readimg(fname)
     kp0, des0 = ro.detector(img0)
     ptf0, vf0, af0, minarea = ro.ftria1(kp0)
-    fname = './warp/warp_' + os.path.split(fname)[1]
-    # fname = './warp/warp_' + os.path.split(os.path.splitext(fname)[0])[1] + '.jpg'
+    # fname = './warp/warp_' + os.path.split(fname)[1]
+    fname = './warp/warp_' + os.path.split(os.path.splitext(fname)[0])[1] + '.jpg'
     cv2.imwrite(fname, img0)
     return kp0, des0, ptf0, vf0, af0, minarea
 
