@@ -38,6 +38,7 @@ def readimg (fname):
     -------
     >>> img = readimg('picture.tiff')
     """
+    print fname
     img = cv2.imread(fname)
     return img
 
@@ -522,6 +523,14 @@ def Tmatrix (ptm1, ptm2):
                 # print idx, "real:", ptm1[1, :, idx], "     Transformed:", pt[i, :]
 
             xo = foutliers(pt[:, 0])
+            try:
+               len(xo)
+            except TypeError:
+               nopointvalid = True
+               continue
+            else:
+                nopointvalid = False
+
             xo_rrange = np.arange(nptm)
             xo_rrange = xo_rrange[::-1]
 
@@ -564,12 +573,13 @@ def Tmatrix (ptm1, ptm2):
     else:
         TM = np.zeros([2, 3])
 
-    return ptm1, ptm2, TM, nopointvalid
+    return ptm1, ptm2, TM, not nopointvalid
 
 def foutliers(data, m=2.0):
     """
 
     """
+    ndata = data.shape[0]
     d = np.abs(data - np.median(data))
     mdev = np.median(d)
     s = d/mdev if mdev else 0.

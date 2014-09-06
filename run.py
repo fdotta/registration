@@ -6,7 +6,7 @@ import drawtria as dt
 
 t0 = time.time()
 img0 = ro.readimg( './light/DSC_4364.tiff.fix.tiff')
-img1 = ro.readimg( './light/DSC_4464.tiff.fix.tiff')
+img1 = ro.readimg( './light/DSC_4393.tiff.fix.tiff')
 kp0, des0 = ro.detector(img0)
 kp1, des1 = ro.detector(img1)
 print "time: %5.2f [kp, des]" % (time.time() - t0)
@@ -21,7 +21,7 @@ ptf1, vf1, af1 = ro.ftria2(kp1, minarea)
 print "time: %5.2f [tria2]" % (time.time() - t0)
 
 t0 = time.time()
-lerr = 0.0075
+lerr = 0.005
 for i in np.arange(4):
     print i, lerr
     ptm0, ptm1, nf = ro.ftriam(ptf0, ptf1, vf0, vf1, af0, af1, err=lerr)
@@ -31,7 +31,7 @@ for i in np.arange(4):
     ptm0o, ptm1o, TM, valid = ro.Tmatrix(ptm0, ptm1)
     print valid, lerr
     if not valid:
-        lerr = lerr/5
+        lerr = lerr/4
     else:
         print "time: %5.2f [TM]" % (time.time() - t0)
         break
